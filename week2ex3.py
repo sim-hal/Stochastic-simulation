@@ -9,7 +9,7 @@ if __name__ == "__main__":
     g = lambda x: np.exp(-np.abs(x)) / 2
     Y = composite_method([lambda size: stats.expon.rvs(size=size), lambda size: -stats.expon.rvs(size=size)], [1/2, 1/2])
     f_tilde = lambda x: (1 / np.sqrt(2 * np.pi) * np.exp(- x ** 2 / 2))
-    N = 10000
+    N = 1_000_000
     t_0 = time.time()
     X = acceptance_rejection(f_tilde, g, Y, c)
     samples = X(N)

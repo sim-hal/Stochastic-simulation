@@ -1,6 +1,7 @@
 from ctypes import ArgumentError
+from typing import Callable
 import numpy as np
-from src.util import RandomVariable, RandomVariables, RealArray, RealFunction
+from src.util import RandomVariable, RandomVariables, RealArray, RealFunction, StochasticProcess
 import scipy.stats as stats
 from random import choices
 
@@ -9,16 +10,18 @@ def inverse_method(inv_cdf: RealFunction) -> RandomVariable:
 
 def acceptance_rejection(f_tilde: RealFunction, g: RealFunction, Y: RandomVariable, c: float) -> RandomVariable:
     def X(size: int=1) -> RealArray:
-        X.counter += size
-        u = stats.uniform.rvs(size=size)
-        y = Y(size)
-        accept = u <= f_tilde(y) / (c * g(y))
         x = np.zeros(size)
-        x[accept] = y[accept]  # type: ignore
-        failed = size - np.sum(accept)
-        if failed > 0:
-            x[~accept] = X(size=size - np.sum(accept))
-        return x
+        def fill_x(x: RealArray):
+            X.counter += len(x)
+            u = stats.uniform.rvs(size=len(x))
+            y = Y(len(x))
+            accept = u <= f_tilde(y) / (c * g(y))
+            x[accept] = y[accept]
+            failed = len(x) - np.sum(accept)
+            if failed > 0:
+                fill_x(x[~accept])
+            return x
+        return fill_x(x)
     X.counter = 0
     return X
 
@@ -34,14 +37,60 @@ def composite_method(rvs: list[RandomVariable], p: list[float]) -> RandomVariabl
         return x
     return X
 
-def box_muller() -> RandomVariables:
+def box_muller() -> RandomVariable:
     U = stats.uniform.rvs
-    def X_Y(size=1):
-        u: RealArray = stats.uniform.rvs(size=size)
-        v: RealArray = stats.uniform.rvs(size=size)
+    def X(size=1):
+        """
+        Size must be divisible by 2, otherwise size - 1 samples will be generated
+        """
+        u: RealArray = stats.uniform.rvs(size=size // 2)
+        v: RealArray = stats.uniform.rvs(size=size // 2)
         rho: RealArray = np.sqrt(-2 * np.log(u))
         theta: RealArray = 2 * np.pi * v
         x: RealArray = np.multiply(rho , np.cos(theta))
         y = np.multiply(rho , np.sin(theta))
-        return x, y
-    return X_Y
+        return np.array(x, y).flatten()
+    return X
+
+def multivariate_normal(mu: RealArray, sigma: RealArray) -> RandomVariable:
+    # TODO: Pivoted cholesky in the case of singular sigma
+    """
+    expectation mu in R^d
+    covariance matrix sigma in R^(dxd)
+    Returns a multivariate random variable in R^d, 
+    """
+    def X(size: int):
+        n = len(sigma)
+        A = np.linalg.cholesky(sigma)
+        y = np.random.randn(size, n)
+        print((y @ A).shape)
+        return mu + y @ A
+    return X
+
+def conditional_multivariate_normal(mu_y: RealArray, mu_z: RealArray, sigma_yy: RealArray, sigma_zz: RealArray, sigma_yz: RealArray, z: RealArray) -> RandomVariable:
+    """
+    Returns the random variable X = Y | Z = z
+    """
+    inv_sigma_zz = np.linalg.inv(sigma_zz)
+    #H = np.linalg.solve(sigma_zz, sigma_yz.transpose())
+    #h = np.linalg.solve(sigma_zz, (z - mu_z))
+    sigma_x = sigma_yy - sigma_yz @ inv_sigma_zz @ sigma_yz.transpose()
+    mu_x = mu_y + (z - mu_z) @ (sigma_yz @ inv_sigma_zz).transpose()
+    return multivariate_normal(mu_x, sigma_x)
+
+
+def gaussian_process(expectation: RealFunction, covariance: Callable[[RealArray, RealArray], RealArray]) -> StochasticProcess:
+    def P(t: RealArray):
+        T, S = np.meshgrid(t, t)
+        sigma = covariance(T, S)
+        mu = expectation(t)
+        X = multivariate_normal(mu, sigma)
+        return X(1)[0, :]
+    return P
+
+def brownian_process() -> StochasticProcess:
+    def P(t: RealArray):
+        dt = np.diff(t, prepend=t[0])
+        increments = np.random.normal(scale=dt)
+        return np.cumsum(increments)
+    return P

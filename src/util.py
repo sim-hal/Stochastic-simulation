@@ -8,6 +8,7 @@ RealArray = npt.NDArray[np.float64]
 RealFunction = Callable[[RealArray], RealArray]
 RandomVariable = Callable[[int], RealArray]
 RandomVariables = Callable[[int], Any]
+StochasticProcess = Callable[[RealArray], RealArray]
 
 def critical_value_KS(n: int, alpha: float):
     alpha1 = alpha / 2
