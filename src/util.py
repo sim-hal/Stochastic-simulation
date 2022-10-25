@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union, Any
+from typing import Callable, Sequence, Union, Any
 import numpy.typing as npt
 import numpy as np
 import math
@@ -9,6 +9,9 @@ RealFunction = Callable[[RealArray], RealArray]
 RandomVariable = Callable[[int], RealArray]
 RandomVariables = Callable[[int], Any]
 StochasticProcess = Callable[[RealArray], RealArray]
+StochasticProcessOnUniformGrid = Callable[[float, float, int], RealArray]
+DiscreteStochasticProcess = Callable[int, RealArray]
+StateSpace = npt.NDArray[np.int64]
 
 def critical_value_KS(n: int, alpha: float):
     alpha1 = alpha / 2

@@ -1,9 +1,10 @@
 from ctypes import ArgumentError
-from typing import Callable
+from typing import Callable, Sequence, Union
 import numpy as np
-from src.util import RandomVariable, RandomVariables, RealArray, RealFunction, StochasticProcess
+from src.util import RandomVariable, RandomVariables, RealArray, RealFunction, StateSpace, StochasticProcess, StochasticProcessOnUniformGrid
 import scipy.stats as stats
 from random import choices
+import numpy.typing as npt
 
 def inverse_method(inv_cdf: RealFunction) -> RandomVariable:
     return lambda size: inv_cdf(stats.uniform.rvs(size=size))
@@ -88,9 +89,32 @@ def gaussian_process(expectation: RealFunction, covariance: Callable[[RealArray,
         return X(1)[0, :]
     return P
 
+def stationary_gaussian_process(expectation: RealFunction, covariance: RealFunction) -> StochasticProcessOnUniformGrid:
+    """
+    Constructs a stationary gassian process
+    Equivalant to the function gaussian_process with a shift invariant covariance function, but faster as it uses FFT with circular embedding
+    """
+    def P(a: float, b: float, n: int):
+        t = np.linspace(a, b, n)
+        cov = covariance(t)
+        alpha = np.r_[cov, cov[-1:1:-1]]
+        lmbda = np.fft.fft(alpha)
+        Y = np.random.randn(2 * (n - 1)) + 1j* np.random.randn(2 * (n - 1))
+        X_tilde = np.fft.ifft(np.sqrt(2*n * lmbda) * Y)
+        return expectation(t) + np.real(X_tilde[:n])
+    return P
+
+
+
 def brownian_process() -> StochasticProcess:
     def P(t: RealArray):
         dt = np.diff(t, prepend=t[0])
         increments = np.random.normal(scale=dt)
         return np.cumsum(increments)
     return P
+
+#def markov_chain(pn_ij: Callable[[int, StateSpace, StateSpace], float], state_space: StateSpace, P_0: RealArray):
+#    I, J = np.meshgrid(state_space, state_space)
+#    def P(N: int):
+#        
+#        return np.array([pn_ij(n, I, J) @ ])
