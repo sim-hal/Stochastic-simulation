@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.generate import conditional_multivariate_normal, gaussian_process
+import matplotlib
 
 if __name__ == "__main__":
     rho = 0.1
@@ -11,7 +12,7 @@ if __name__ == "__main__":
     m = n - 1
     t = np.linspace(0, 1, n, endpoint=True)
     s = np.linspace((t[1] - t[0]) / 2, t[-2] + (t[-1] - t[-2]) / 2, m, endpoint=True)
-    z = P(t)
+    z = P(t)(1)
     sigma_yy = covariance(*np.meshgrid(s, s))
     sigma_yz = covariance(*np.meshgrid(t, s))
     sigma_zz = covariance(*np.meshgrid(t, t))

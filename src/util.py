@@ -5,13 +5,10 @@ import math
 from scipy import interpolate as intrp
 
 RealArray = npt.NDArray[np.float64]
+Real = Union[RealArray, float]
 RealFunction = Callable[[RealArray], RealArray]
 RandomVariable = Callable[[int], RealArray]
-RandomVariables = Callable[[int], Any]
-StochasticProcess = Callable[[RealArray], RealArray]
-StochasticProcessOnUniformGrid = Callable[[float, float, int], RealArray]
-DiscreteStochasticProcess = Callable[int, RealArray]
-StateSpace = npt.NDArray[np.int64]
+StochasticProcess = Callable[..., RandomVariable]
 
 def critical_value_KS(n: int, alpha: float):
     alpha1 = alpha / 2

@@ -10,7 +10,7 @@ if __name__ == "__main__":
     H = 0.5
     C_dBH = lambda diff: 1/2 * (  np.abs(-diff + h) ** (2 * H) + np.abs(diff + h) ** (2 * H) - 2 *  diff ** (2 * H))
     P = stationary_gaussian_process(lambda t: np.zeros(len(t)), C_dBH)
-    dB = P(0, 1, 50)
+    dB = P(0, 1, 50)(1)[0, :]
     plt.plot(np.linspace(a, b, n), dB)
     plt.savefig("plots/fft_gaussian.png")
     plt.clf()

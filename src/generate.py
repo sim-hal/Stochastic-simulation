@@ -1,7 +1,7 @@
 from ctypes import ArgumentError
 from typing import Callable, Sequence, Union
 import numpy as np
-from src.util import RandomVariable, RandomVariables, RealArray, RealFunction, StateSpace, StochasticProcess, StochasticProcessOnUniformGrid
+from src.util import RandomVariable, Real, RealArray, RealFunction, StochasticProcess
 import scipy.stats as stats
 from random import choices
 import numpy.typing as npt
@@ -64,7 +64,6 @@ def multivariate_normal(mu: RealArray, sigma: RealArray) -> RandomVariable:
         n = len(sigma)
         A = np.linalg.cholesky(sigma)
         y = np.random.randn(size, n)
-        print((y @ A).shape)
         return mu + y @ A
     return X
 
@@ -85,11 +84,13 @@ def gaussian_process(expectation: RealFunction, covariance: Callable[[RealArray,
         T, S = np.meshgrid(t, t)
         sigma = covariance(T, S)
         mu = expectation(t)
-        X = multivariate_normal(mu, sigma)
-        return X(1)[0, :]
+        def Z(size: int):
+            X = multivariate_normal(mu, sigma)
+            return X(1)[0, :]
+        return Z
     return P
 
-def stationary_gaussian_process(expectation: RealFunction, covariance: RealFunction) -> StochasticProcessOnUniformGrid:
+def stationary_gaussian_process(expectation: RealFunction, covariance: RealFunction) -> StochasticProcess:
     """
     Constructs a stationary gassian process
     Equivalant to the function gaussian_process with a shift invariant covariance function, but faster as it uses FFT with circular embedding
@@ -99,22 +100,27 @@ def stationary_gaussian_process(expectation: RealFunction, covariance: RealFunct
         cov = covariance(t)
         alpha = np.r_[cov, cov[-1:1:-1]]
         lmbda = np.fft.fft(alpha)
-        Y = np.random.randn(2 * (n - 1)) + 1j* np.random.randn(2 * (n - 1))
-        X_tilde = np.fft.ifft(np.sqrt(2*n * lmbda) * Y)
-        return expectation(t) + np.real(X_tilde[:n])
+        def Z(size: int):
+            Y = np.random.randn(size, 2 * (n - 1)) + 1j* np.random.randn(size, 2 * (n - 1))
+            X_tilde = np.fft.ifft(np.sqrt(2*n * lmbda) * Y)
+            return expectation(t)[None, :] + np.real(X_tilde[:, :n])
+        return Z
     return P
-
-
 
 def brownian_process() -> StochasticProcess:
     def P(t: RealArray):
         dt = np.diff(t, prepend=t[0])
-        increments = np.random.normal(scale=dt)
-        return np.cumsum(increments)
+        def Z(size):
+            increments = np.random.normal(scale=dt, size=(size, len(dt)))
+            return np.cumsum(increments, axis=1)
+        return Z
     return P
 
-#def markov_chain(pn_ij: Callable[[int, StateSpace, StateSpace], float], state_space: StateSpace, P_0: RealArray):
-#    I, J = np.meshgrid(state_space, state_space)
-#    def P(N: int):
-#        
-#        return np.array([pn_ij(n, I, J) @ ])
+def random_walk(p: Real, increments: Real, x_0: Real) -> StochasticProcess:
+    def P(n: int):
+        rng = np.random.default_rng()
+        def Z(size: int):
+            increment_samples = rng.choice(increments, p=p, size=(size, n), axis=0)
+            return x_0 + np.cumsum(increment_samples, axis=1)
+        return Z
+    return P
