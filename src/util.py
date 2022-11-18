@@ -1,14 +1,25 @@
-from typing import Callable, Sequence, Union, Any
+from typing import Callable, Iterable, Sequence, Type, Union, Any, TypeVar, Collection, Generic
 import numpy.typing as npt
 import numpy as np
 import math
 from scipy import interpolate as intrp
+from multipledispatch import dispatch
 
-RealArray = npt.NDArray[np.float64]
-Real = Union[RealArray, float]
+C = TypeVar("C", bound=Collection)
+Random = Callable[[int], C]
+RealArray = npt.NDArray[np.floating]
+Real = RealArray | float | np.floating
 RealFunction = Callable[[RealArray], RealArray]
-RandomVariable = Callable[[int], RealArray]
+RandomVariable = Random[RealArray]
 StochasticProcess = Callable[..., RandomVariable]
+
+T = TypeVar("T", RandomVariable, StochasticProcess)
+
+
+
+def callable_or_not_add(a: Callable, b: Callable | float):
+    return lambda s: a(s) + (b(s) if callable(b) else b) 
+
 
 def critical_value_KS(n: int, alpha: float):
     alpha1 = alpha / 2
