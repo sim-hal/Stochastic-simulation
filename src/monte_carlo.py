@@ -1,8 +1,10 @@
 from typing import Optional
 import numpy as np
 import numpy.typing as npt
-from src.util import RandomVariable, Real, RealArray, RealFunction
+from src.util import Real, RealArray, RealFunction
 import scipy.stats as stats
+
+from src.stochastictypes.RV import RealRV
 
 
 
@@ -16,12 +18,12 @@ def asymptotic_monte_carlo_confidence_interval(alpha: float, var: Real, N: int):
     c_alpha = stats.norm.ppf(1 - alpha/2)
     return c_alpha * np.sqrt(var / N)
 
-def monte_carlo_estimate(Z: RandomVariable, N: int, alpha: float):
+def monte_carlo_estimate(Z: RealRV, N: int, alpha: float):
     samples = Z(N)
     est_mean, est_var = sample_estimates(samples)
     return est_mean, asymptotic_monte_carlo_confidence_interval(alpha, est_var, N)
 
-def stratified_monte_carlo_estimate(Z_strats: list[RandomVariable], p: RealArray, N: npt.NDArray[np.int64], alpha: float):
+def stratified_monte_carlo_estimate(Z_strats: list[RealRV], p: RealArray, N: npt.NDArray[np.int64], alpha: float):
     # TODO: untested
     samples = np.array([Z_i(N_i) for Z_i, N_i in zip(Z_strats, N)])
     mu_ests, var_ests = sample_estimates(samples)
@@ -30,7 +32,7 @@ def stratified_monte_carlo_estimate(Z_strats: list[RandomVariable], p: RealArray
     return est_mean, asymptotic_monte_carlo_confidence_interval(alpha, est_var, int(np.sum(N)))
 
 
-def two_stage_monte_carlo_sample_mean(Z: RandomVariable, alpha=.05, N_tilde: int=100, tol:float=1e-6, initial_sample:Optional[RealArray]=None) -> tuple[float, float, float]:
+def two_stage_monte_carlo_sample_mean(Z: RealRV, alpha=.05, N_tilde: int=100, tol:float=1e-6, initial_sample:Optional[RealArray]=None) -> tuple[float, float, float]:
     """_summary_
 
     Args:
@@ -57,7 +59,7 @@ def two_stage_monte_carlo_sample_mean(Z: RandomVariable, alpha=.05, N_tilde: int
     confidence = asymptotic_monte_carlo_confidence_interval(alpha, est_var, N)
     return est_mean, est_mean - confidence, est_mean + confidence
 
-def sequential_monte_carlo_sample_mean(Z: RandomVariable, alpha=10 ** -1.5, N_k: int=100, tol:float=1/10, next_N=lambda N: N * 2):
+def sequential_monte_carlo_sample_mean(Z: RealRV, alpha=10 ** -1.5, N_k: int=100, tol:float=1/10, next_N=lambda N: N * 2):
     samples = Z(N_k)
     est_mean, est_var = sample_estimates(samples)
     c_alpha = stats.norm.ppf(1 - alpha/2)

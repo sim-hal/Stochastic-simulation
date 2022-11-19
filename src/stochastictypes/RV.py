@@ -33,7 +33,7 @@ class RealRV(RV[RealArray]):
             v = other(size) if isinstance(other, RealRV) else other 
             return self(size) - v
         return RealRV(new)
-    def __div__(self, other: Real | Self):
+    def __treudiv__(self, other: Real | Self):
         def new(size: int):
             v = other(size) if isinstance(other, RealRV) else other 
             return self(size) / v
@@ -65,5 +65,10 @@ class RealRV(RV[RealArray]):
             v = p(size) if isinstance(p, RealRV) else p 
             return self(size) ** v
         return RealRV(new)
-
+    def __rmul__(self, other: Real) -> Self:
+        return self.__mul__(other)
+    def __radd__(self, other: Real) -> Self:
+        return self.__add__(other)
+    def __rtruediv__(self, other: Real) -> Self:
+        return RealRV(lambda size: other / self(size))
 

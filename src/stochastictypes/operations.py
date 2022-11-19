@@ -15,4 +15,7 @@ def sp_exp(sp: SP) -> SP:
     return SP(lambda *args: rrv_exp(sp(*args)))
 
 def rrv_min(rrv: RealRV) -> RealRV:
-    return RealRV(lambda size: np.min(rrv(size), axis=-1))
+    return RealRV(lambda size: np.min(rrv(size), axis=1))
+
+def rrv_sum(rrv: RealRV) -> RealRV:
+    return RealRV(lambda size: np.sum(rrv(size), axis=1))

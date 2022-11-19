@@ -126,3 +126,13 @@ def random_walk(p: Real, increments: Real, x_0: Real) -> SP[int]:
             return x_0 + np.cumsum(increment_samples, axis=1)
         return RealRV(Z)
     return SP(P)
+
+
+def latin_hypercube(d: int, N: int) -> RealRV:
+    rng = np.random.default_rng()
+    def LHC(size: int):
+        I = np.arange(N)
+        J = rng.permuted(np.tile(I, d * size).reshape(size, N, d), axis=1)
+        u = np.random.uniform(size=(size, N, d))
+        return (J + u) / N
+    return RealRV(LHC)

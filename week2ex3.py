@@ -4,10 +4,12 @@ from src.generate import box_muller, composite_method, acceptance_rejection
 import scipy.stats as stats
 import time
 
+from src.stochastictypes.RV import RealRV
+
 if __name__ == "__main__":
     c = np.sqrt(2 * np.e / np.pi)
     g = lambda x: np.exp(-np.abs(x)) / 2
-    Y = composite_method([lambda size: stats.expon.rvs(size=size), lambda size: -stats.expon.rvs(size=size)], [1/2, 1/2])
+    Y = composite_method([RealRV(lambda size: stats.expon.rvs(size=size)), RealRV(lambda size: -stats.expon.rvs(size=size))], [1/2, 1/2])
     f_tilde = lambda x: (1 / np.sqrt(2 * np.pi) * np.exp(- x ** 2 / 2))
     N = 1_000_000
     t_0 = time.time()
